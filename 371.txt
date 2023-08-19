@@ -1,0 +1,173 @@
+
+//module assignment1 (SW, HEX0, HEX1, HEX2, HEX3);
+//	input [15:0]SW;
+//	output [6:0]HEX0;
+//	output [6:0]HEX1;
+//	output [6:0]HEX2;
+//	output [6:0]HEX3;
+//	
+//	sevenSegDisp U1(SW[0], SW[1], SW[2], SW[3], HEX0[0], HEX0[1], HEX0[2], HEX0[3], HEX0[4], HEX0[5], HEX0[6]);
+//	sevenSegDisp U2(SW[4], SW[5], SW[6], SW[7], HEX1[0], HEX1[1], HEX1[2], HEX1[3], HEX1[4], HEX1[5], HEX1[6]);
+//	sevenSegDisp U3(SW[8], SW[9], SW[10], SW[11], HEX2[0], HEX2[1], HEX2[2], HEX2[3], HEX2[4], HEX2[5], HEX2[6]);
+//	sevenSegDisp U4(SW[12], SW[13], SW[14], SW[15], HEX3[0], HEX3[1], HEX3[2], HEX3[3], HEX3[4], HEX3[5], HEX3[6]);
+//endmodule
+
+//module assignment1 (SW, HEX0, HEX1);
+//	input [3:0]SW;
+//	output [6:0]HEX0;
+//	output [6:0]HEX1;
+//	wire Z, w2, w1, w0, m3, m2, m1, m0; 
+//	
+//	BCDComparator check9(SW[3], SW[2], SW[1], SW[0], Z);
+//	BCDCircuitA ovf(SW[2], SW[1], SW[0], w2, w1, w0);
+//	
+//	MUX M3(SW[3], 0, Z, m3);
+//	MUX M2(SW[2], w2, Z, m2);
+//	MUX M1(SW[1], w1, Z, m1);
+//	MUX M0(SW[0], w0, Z, m0);
+//	
+//	sevenSegDisp D1(Z, 0, 0, 0, HEX1[0], HEX1[1], HEX1[2], HEX1[3], HEX1[4], HEX1[5], HEX1[6]);
+//	sevenSegDisp D0(m0, m1, m2, m3, HEX0[0], HEX0[1], HEX0[2], HEX0[3], HEX0[4], HEX0[5], HEX0[6]);
+//
+//endmodule 
+
+module assignment1 (SW, LEDR, LEDG, HEX6, HEX4, HEX1, HEX0);
+	input [8:0]SW; //carryin = 8
+	output [8:0]LEDR;
+	output [8:0]LEDG; //
+	output [6:0]HEX6;
+	output [6:0]HEX4;
+	output [6:0]HEX1;	
+	output [6:0]HEX0;
+	wire c1, c2, c3;
+	wire ca, cb, cc, m3, m2, m1, m0, carryout;
+	wire checkin1, checkin2, Z, Y;
+	
+	//display inputs 
+	assign LEDR[8:0] = SW[8:0]; // input lights
+	sevenSegDisp A(SW[0], SW[1], SW[2], SW[3], HEX4[0], HEX4[1], HEX4[2], HEX4[3], HEX4[4], HEX4[5], HEX4[6]);
+	sevenSegDisp B(SW[4], SW[5], SW[6], SW[7], HEX6[0], HEX6[1], HEX6[2], HEX6[3], HEX6[4], HEX6[5], HEX6[6]); 
+	
+	//check if either are greater than 9 
+	BCDComparator check1(SW[3], SW[2], SW[1], SW[0], checkin1);
+	BCDComparator check2(SW[7], SW[6], SW[5], SW[4], checkin2);
+	
+	assign LEDG[8] = checkin1 | checkin2; //turn on if invalid input
+	
+	
+	// calculate sum
+	fullAdder add0(SW[0], SW[4], SW[8], LEDG[0], c1);
+	fullAdder add1(SW[1], SW[5], c1, LEDG[1], c2);
+	fullAdder add2(SW[2], SW[6], c2, LEDG[2], c3);
+	fullAdder add3(SW[3], SW[7], c3, LEDG[3], LEDG[4]);
+	
+	BCDComparator check3(LEDG[3], LEDG[2], LEDG[1], LEDG[0], Z);
+	
+	assign Y = LEDG[4] | Z;
+	
+	//add 10's comp to the output
+	fullAdder add4(LEDG[0], 0, 0, m0, ca);
+	fullAdder add5(LEDG[1], Y, ca, m1, cb);
+	fullAdder add6(LEDG[2], Y, cb, m2, cc);
+	fullAdder add7(LEDG[3], 0, cc, m3, carryout);
+	
+	sevenSegDisp C0(m0, m1, m2, m3, HEX0[0], HEX0[1], HEX0[2], HEX0[3], HEX0[4], HEX0[5], HEX0[6]); 
+	sevenSegDisp C1(Y, 0, 0, 0, HEX1[0], HEX1[1], HEX1[2], HEX1[3], HEX1[4], HEX1[5], HEX1[6]); 
+	
+	
+	
+endmodule 
+	
+
+
+module sevenSegDisp(s0, s1, s2, s3, L0, L1, L2, L3, L4, L5, L6);
+	input s0, s1, s2, s3;
+	output L0, L1, L2, L3, L4, L5, L6;
+	wire a, b, c, d, e, f, g, h, i, j;
+	
+	assign a = s1&s0;
+	assign b = s1&~s0;
+	assign c = s2&~s1&s0;
+	assign d = ~s2&~s1&~s0;
+	assign e = s3;
+	assign f = ~s2&s1;
+	assign g = ~s2&~s1;
+	assign h = ~s1&~s0;
+	assign i = s2&~s1;
+	assign j = s2&s1&~s0;
+	
+	assign L0 = ~(a | b | c | d | e);
+	assign L1 = ~(a | e | f | g | h);
+	assign L2 = ~(a | e | g | i | j);
+	assign L3 = ~(b | c | d | e | f);
+	assign L4 = ~(b | d);
+	assign L5 = ~(e | h | i | j);
+	assign L6 = ~(b | e | f | i);
+	
+endmodule
+
+module BCDComparator(v3,v2,v1,v0, Z);
+	input v3, v2, v1, v0;
+	output Z;
+	assign Z = v3 & v2 | v3 & v1;
+endmodule 
+
+module BCDCircuitA(v2, v1, v0, w2, w1, w0);
+	input v2, v1, v0;
+	output w2, w1, w0;
+	
+	assign w2 = v1 & v2;
+	assign w1 = ~v1 & v2;
+	assign w0 = v0 & v1 | v0 & v2;
+endmodule
+
+module MUX(x0, x1, s, out);
+	input x0, x1, s;
+	output out; 
+	
+	assign out = ~s & x0 | s & x1; //return x0 if s = 0, return x1 if s = 1
+endmodule
+
+module fullAdder(a, b, carryin, sum, carryout); 
+	input a, b, carryin;
+	output sum, carryout;
+	
+	assign sum = a^b^carryin;
+	assign carryout = a & b | a & carryin | b & carryin;
+endmodule
+
+module BCDDisp(v3, v2, v1, v0, L00, L01, L02, L03, L04, L05, L06, L10, L11, L12, L13, L14, L15, L16);
+	input v3, v2, v1, v0;
+	output L00, L01, L02, L03, L04, L05, L06, L10, L11, L12, L13, L14, L15, L16;
+	
+	wire Z, w2, w1, w0, m3, m2, m1, m0; 
+
+	BCDComparator check9(v3, v2, v1, v0, Z);
+	BCDCircuitA ovf(v2, v1, v0, w2, w1, w0);
+	
+	MUX M3(v3, 0, Z, m3);
+	MUX M2(v2, w2, Z, m2);
+	MUX M1(v1, w1, Z, m1);
+	MUX M0(v0, w0, Z, m0);
+	
+	sevenSegDisp D1(Z, 0, 0, 0, L10, L11, L12, L13, L14, L15, L16);
+	sevenSegDisp D0(m0, m1, m2, m3, L00, L01, L02, L03, L04, L05, L06);
+endmodule 
+
+//module BCDDispOvf(v4, v3, v2, v1, v0, L00, L01, L02, L03, L04, L05, L06, L10, L11, L12, L13, L14, L15, L16);
+//	input v4, v3, v2, v1, v0;
+//	output L00, L01, L02, L03, L04, L05, L06, L10, L11, L12, L13, L14, L15, L16;
+//	
+//	wire Z, w2, w1, w0, m3, m2, m1, m0; 
+//
+//	BCDComparator check9(v3, v2, v1, v0, Z);
+//	BCDCircuitA ovf(v2, v1, v0, w2, w1, w0);
+//	
+//	MUX M3(v3, 0, Z, m3);
+//	MUX M2(v2, w2, Z, m2);
+//	MUX M1(v1, w1, Z, m1);
+//	MUX M0(v0, w0, Z, m0);
+//	
+//	sevenSegDisp D1(Z, 0, 0, 0, L10, L11, L12, L13, L14, L15, L16);
+//	sevenSegDisp D0(m0, m1, m2, m3, L00, L01, L02, L03, L04, L05, L06);
+//endmodule 
